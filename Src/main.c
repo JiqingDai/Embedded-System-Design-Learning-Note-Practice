@@ -1,6 +1,6 @@
 //Where is the LED connected
-//-Pin? Green LED = 7, Blue LED = 7, Red LED = 9
-//Port? Green LED = C,Blue LED = B, Red LED = A
+//-Pin? Green LED1 = 7, Blue LED2 = 7, Red LED3 = 9
+//Port? Green LED1 = C,Blue LED2 = B, Red LED3 = A
 //LED1: Green LED -> NOT Correct: Pin PA5 (SB120 ON, SB118 OFF)
 //Short Circuit->ON, Else OFF, show on the back of the board
 //As it actually SB120OFF, SB118ON -> Pin PC7 is CORRECT Pin to drive the LED1
@@ -44,6 +44,12 @@
 #define GPIOB_CLK_EN (1U<<1) //Set bit1 to 1 for the 32bits
 #define GPIOC_CLK_EN (1U<<2) //Set bit2 to 1 for the 32bits
 
+
+
+/*
+ * 3. Configuring Pins Using the register we created
+ */
+
 //Configure mode/direction registers, search MODER in reference manual
 //configure PC7, PB7, PA9 as output pins
 #define MODER_OFFSET 0x00UL
@@ -52,9 +58,12 @@
 #define GPIOB_MODE_R (*(volatile unsigned int *)(GPIOB_BASE + MODER_OFFSET))
 #define GPIOC_MODE_R (*(volatile unsigned int *)(GPIOC_BASE + MODER_OFFSET))
 
-#define USER_LED1_MODER (1U<<14) //Green
-#define USER_LED2_MODER	(1U<<14) //Blue
-#define USER_LED3_MODER (1U<<18) //Red
+#define USER_LED1_MODER0 (1U<<14)    //Green
+#define USER_LED1_MODER1 (~(1U<<15)) //Green
+#define USER_LED2_MODER0 (1U<<14)    //Blue
+#define USER_LED2_MODER1 (~(1U<<15)) //Blue
+#define USER_LED3_MODER0 (1U<<18)    //Red
+#define USER_LED3_MODER1 (~(1U<<19)) //Red
 
 //configure output data register
 #define ODR_OFFSET 0X14UL
@@ -62,29 +71,23 @@
 #define GPIOB_OD_R (*(volatile unsigned int *)(GPIOB_BASE + ODR_OFFSET))
 #define GPIOC_OD_R (*(volatile unsigned int *)(GPIOC_BASE + ODR_OFFSET))
 
-#define USER_LED1 (1U<<7)
-#define USER_LED2 (1U<<7)
-#define USER_LED3 (1U<<9)
+#define USER_LED1 (1U<<7)//Pin7)
+#define USER_LED2 (1U<<7)//Pin7
+#define USER_LED3 (1U<<9)//Pin9
 
-/*
- * 3. Configuring Pins Using the register we created
- */
 
-/*
- * 4. Creating Registers from Structure Members
- */
 int main(void){
 	/*Enable clock access to Ports A&B&C*/
 
 	AHB2EN_R_BASE |= (GPIOA_CLK_EN | GPIOB_CLK_EN | GPIOC_CLK_EN);
 
 	/*Configure LED pins as output pins*/
-	GPIOA_MODE_R |= USER_LED3_MODER;
-	GPIOA_MODE_R &= 0b11111111111101111111111111111111;
-	GPIOB_MODE_R |= USER_LED2_MODER;
-	GPIOB_MODE_R &= 0b11111111111111110111111111111111;
-	GPIOC_MODE_R |= USER_LED1_MODER;
-	GPIOC_MODE_R &= 0b11111111111111110111111111111111;
+	GPIOA_MODE_R |= USER_LED3_MODER0;
+	GPIOA_MODE_R &= USER_LED3_MODER1;
+	GPIOB_MODE_R |= USER_LED2_MODER0;
+	GPIOB_MODE_R &= USER_LED2_MODER1;
+	GPIOC_MODE_R |= USER_LED1_MODER0;
+	GPIOC_MODE_R &= USER_LED1_MODER1;
 	while(1){
 		/*Operate Leds */
 		//1. turn on all LEDs
@@ -95,7 +98,7 @@ int main(void){
 		GPIOA_OD_R ^= USER_LED3;
 		GPIOB_OD_R ^= USER_LED2;
 		GPIOC_OD_R ^= USER_LED1;
-		for(int i = 0; i < 100000; i++){}
+		for(int i = 0; i < 300000; i++){}
 	}
 }
 
